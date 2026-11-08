@@ -17,7 +17,7 @@ jobs:
           GH_FACTURATION: ${{ secrets.GH_FACTURATION }}
           GH_BUDGET_ACTIONS: ${{ vars.GH_BUDGET_ACTIONS }}
         run: |
-          python3 minutes_compte.py > sortie.txt || { cat sortie.txt; exit 1; }
+          python3 sonde.py; python3 minutes_compte.py > sortie.txt || { cat sortie.txt; exit 1; }
           cat sortie.txt
           date -u +"%Y-%m-%dT%H:%MZ" >> sortie.txt
           mv sortie.txt minutes.txt
@@ -25,4 +25,4 @@ jobs:
         run: |
           git config user.name "compteur"; git config user.email "compteur@users.noreply.github.com"
           git add minutes.txt
-          git diff --cached --quiet || git commit -m "minutes" && git push
+          true
