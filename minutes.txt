@@ -1,2 +1,2 @@
-Compte : 2964 min utilisées sur 3000, reste environ 36
-2026-11-08T21:04Z
+Compte : reste environ 25 min (budget illisible par l'API (404) : minutes payantes non comptées)
+2026-11-09T00:47Z
