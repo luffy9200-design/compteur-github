@@ -15,7 +15,7 @@ jobs:
       - name: Lire les minutes du compte
         env:
           GH_FACTURATION: ${{ secrets.GH_FACTURATION }}
-          GH_BUDGET_ACTIONS: ${{ vars.GH_BUDGET_ACTIONS }}
+          GH_BUDGET_ACTIONS: ${{ vars.GH_BUDGET_ACTIONS || '6' }}   # budget Actions choisi par Luffy sur GitHub ($)
         run: |
           python3 minutes_compte.py > sortie.txt || { cat sortie.txt; exit 1; }
           cat sortie.txt
