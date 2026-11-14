@@ -57,12 +57,13 @@ payantes = max(0, utilisees - QUOTA)
 reste = QUOTA - offertes
 debut = (j.replace(day=1) + dt.timedelta(days=32)).replace(day=1)
 
-texte = f"offertes {nombre(offertes)} sur {nombre(QUOTA)} utilisées"
+texte = f"offertes {nombre(offertes)}/{nombre(QUOTA)} utilisées"
 if reste == 0:
-    texte += f", payant ce mois : {nombre(payantes)} min, {dollars(paye)} facturés"
-    texte += f", offertes de nouveau le 1er {['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][debut.month]}"
+    mois = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août',
+            'septembre', 'octobre', 'novembre', 'décembre'][debut.month]
+    texte += f" · payant ce mois {nombre(payantes)} min ({dollars(paye)}) · offertes de retour le 1er {mois}"
 else:
-    texte += f", {nombre(reste)} offertes restantes"
+    texte += f" · reste {nombre(reste)} offertes"
     if paye > 0:
-        texte += f", {dollars(paye)} facturés"
+        texte += f" · payant ce mois {dollars(paye)}"
 print(f"Compte : {texte}")
