@@ -2,14 +2,17 @@
 """Minutes GitHub Actions de TOUT le compte, telles que GitHub les facture.
 Tous les chiffres viennent de la facture GitHub du mois (API « billing usage ») :
 minutes offertes utilisées, minutes payantes, dollars déjà facturés.
-GitHub ne donne pas le plafond du budget d'un compte personnel à l'API
-(l'adresse « budgets » n'existe que pour les organisations) : il n'est jamais écrit à la main ici.
+GitHub ne donne pas le plafond du budget d'un compte personnel à l'API (l'adresse « budgets »
+n'existe que pour les organisations) : il vient de GH_BUDGET_ACTIONS (workflow minutes.yml), choisi par Luffy.
+Reste = minutes offertes non utilisées + (budget − dollars déjà facturés) / prix d'une minute Linux.
 Lit la clé GH_FACTURATION (droit « Plan » en lecture seule). Lecture seule."""
 import datetime as dt, json, os, sys, urllib.request
 
 COMPTE = os.environ.get("GH_COMPTE", "luffy9200-design")
 QUOTA = int(os.environ.get("GH_QUOTA", "3000"))   # GitHub Pro : 3 000 minutes offertes par mois
 POIDS = {"linux": 1, "windows": 2, "macos": 10}   # minutes Windows et macOS comptent double et ×10
+PRIX_LINUX = 0.006                                 # $ par minute Linux, si la facture ne le donne pas
+BUDGET = float(os.environ.get("GH_BUDGET_ACTIONS") or 0)   # $ autorisés au-delà des minutes offertes
 
 cle = os.environ.get("GH_FACTURATION")
 if not cle:
@@ -38,7 +41,7 @@ try:
 except Exception as e:
     print(f"erreur {e}"); sys.exit(1)
 
-utilisees, paye = 0.0, 0.0
+utilisees, paye, prix = 0.0, 0.0, None
 for l in donnees.get("usageItems", []):
     if l.get("product", "").lower() != "actions":
         continue
@@ -50,6 +53,9 @@ for l in donnees.get("usageItems", []):
     sku = l.get("sku", "").lower()
     poids = next((p for k, p in POIDS.items() if k in sku), 1)
     utilisees += float(l.get("quantity", 0)) * poids
+    if "linux" in sku and float(l.get("pricePerUnit", 0) or 0) > 0:
+        prix = float(l["pricePerUnit"])
+prix = prix or PRIX_LINUX
 
 utilisees = round(utilisees)
 offertes = min(QUOTA, utilisees)
@@ -57,13 +63,14 @@ payantes = max(0, utilisees - QUOTA)
 reste = QUOTA - offertes
 debut = (j.replace(day=1) + dt.timedelta(days=32)).replace(day=1)
 
-texte = f"offertes {nombre(offertes)}/{nombre(QUOTA)} utilisées"
-if reste == 0:
-    mois = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août',
-            'septembre', 'octobre', 'novembre', 'décembre'][debut.month]
-    texte += f" · payant ce mois {nombre(payantes)} min ({dollars(paye)}) · offertes de retour le 1er {mois}"
+payables = max(0, int((BUDGET - paye) / prix))
+total = reste + payables
+mois = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août',
+        'septembre', 'octobre', 'novembre', 'décembre'][debut.month]
+texte = f"reste environ {total} min"   # chiffre sans espace : lu aussi par l ancien mod
+if reste:
+    texte += f" ({nombre(reste)} offertes + {nombre(payables)} avec le budget de {BUDGET:g} $)"
 else:
-    texte += f" · reste {nombre(reste)} offertes"
-    if paye > 0:
-        texte += f" · payant ce mois {dollars(paye)}"
+    texte += f" sur le budget de {BUDGET:g} $ ({dollars(paye)} déjà utilisés)"
+    texte += f" · offertes {nombre(offertes)}/{nombre(QUOTA)} épuisées, de retour le 1er {mois}"
 print(f"Compte : {texte}")
